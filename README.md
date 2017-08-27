@@ -11,3 +11,4 @@
  - [굿스마일 글로벌](http://goodsmileshop.com/en/)
  - [Mandarake](http://mandarake.co.jp)
  - [Suruga-ya](http://www.suruga-ya.jp)
+ - [Amazon US](http://www.amazon.com)

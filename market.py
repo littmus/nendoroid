@@ -82,10 +82,6 @@ class Amiami(Market):
         else:
             return None
 
-class Goodsmile(Market):
-    def __init__(self):
-        pass
-
 class Aladin(Market):
     
     search_url = 'http://www.aladin.co.kr/ttb/api/ItemSearch.aspx'
@@ -127,6 +123,10 @@ class Aladin(Market):
             return product
         else:
             return None
+
+class Goodsmile(Market):
+    def __init__(self):
+        pass
 
 class AmazonUSA(Market):
     def __init__(self):
