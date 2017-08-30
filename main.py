@@ -4,20 +4,11 @@ from nendoroid import Nendoroid
 from nendoroid import Product
 from market import Aladin, Amiami, AmazonJapan
 
+import jsonpickle
+
 jp_url = "http://www.goodsmile.info/ja/nendoroid{}-{}"
 
 s = requests.Session()
-
-def parse_item(item):
-    item_num = ''
-    item_name = ''
-    item_series = ''
-    item_manufacturer = ''
-    item_category = ''
-    item_price = ''
-    item_release_date = ''
-    item_pic_url = ''
-
 
 def main():
     aladin = Aladin()
@@ -41,9 +32,13 @@ def main():
 
     nen702 = Nendoroid.get_info('http://www.goodsmile.info/ja/product/6596/')
     print(nen702)
+    j = jsonpickle.encode(nen702)
+    print(j)
+    print(nen702)
     rr = aladin.get_product_info(nen702)
+    jr = jsonpickle.encode(rr)
     print(rr)
-    
+    print(jr)
     ami = amiami.get_product_info(nen702)
     print(ami)
 

@@ -8,10 +8,11 @@ import config
 from nendoroid import Product
 
 class Market(object):
-    def __init__(self, name, discounts={}, mileages={}):
+    def __init__(self, name, discounts={}, mileages={}, shipping_fee=None):
         self.name = name
         self.discounts = discounts
         self.mileages = mileages
+        self.shipping_fee = shipping_fee
 
     def __repr__(self):
         return self.name
@@ -21,6 +22,10 @@ class AmazonJapan(Market):
     def __init__(self):
         discounts = {}
         discounts['소비세'] = lambda price:math.ceil(price*0.074)
+        shipping_fee = {
+            'Standard':lambda n:n*250 + 400,
+            'Priority':lambda n:n*500 + 600
+        }
         super().__init__('일마존', discounts)
 
         self.amazon = bottlenose.Amazon(
@@ -40,6 +45,7 @@ class AmazonJapan(Market):
         saved = int(amazon_offer.find('amountsaved').find('amount').string)
         
         product = Product(nendoroid, self, link, price, discount=saved)
+        
         return product
 
 
@@ -48,11 +54,19 @@ class Amiami(Market):
     search_params = {
         's_keywords':''
     }
-
+    shipping_fee_table = {
+        'ASP':[980, 1480, 1920, 2360],
+        'EMS':[1400, 2100, 2700, 3300, 3800, 4300, 5300, 5300, 6300, 6300, 7300, 7300, 8100, 8100, 8900, 8900, 9700, 9700, 10500, 10500],
+        'DHL':[-1, 2200, 2650],
+    }
     def __init__(self):
         mileages = {}
         mileages['기본 마일리지'] = lambda price:math.ceil(price*0.01)
-        
+        shipping_fee = {
+            'ASP':lambda n:self.shipping_fee_table['ASP'][n-1] if n <= 4 else -1,
+            'EMS':lambda n:self.shipping_fee_table['EMS'][n-1] if n <= 20 else -1,
+            'DHL':lambda n:self.shipping_fee_table['DHL'][n-1] if n <= 20 else -1,
+        }
         super().__init__('아미아미', {}, mileages)
 
     def get_product_info(self, nendoroid):
@@ -126,7 +140,14 @@ class Aladin(Market):
 
 class Goodsmile(Market):
     def __init__(self):
+        shipping_fee = 2000
         pass
+
+    def get_product_info(self, nendoroid):
+
+        product = Product(nendoroid, )
+
+
 
 class AmazonUSA(Market):
     def __init__(self):

@@ -1,0 +1,20 @@
+<p>
+    <div class="ui mini input">
+        <label>
+            검색 :
+            <input type="text" size="100" ng-model="filterStr" autocorrect="off" autocomplete="off" spellcheck="false">
+        </label>
+        &nbsp;
+        <button ng:click="filterStr = ''" class="ui mini button">Clear</button>
+    </div>
+</p>
+
+<table id="list" cellspacing="0" class="ui table striped sortable unstackable" sticky-table>
+    <tbody>
+        <tr ng-repeat="nendoroid in fullNendoroidList | orderBy:sortFunc:sortReverse | filter:filterStr">
+            <td><img src='nendoroid.img_src' /></td>
+            <td>{{nendoroid.num}}</td>
+            <td>{{nendoroid.name}}</td>
+        </tr>
+    </tbody>
+</table>

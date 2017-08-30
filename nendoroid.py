@@ -1,6 +1,8 @@
 import types
 import requests
 from bs4 import BeautifulSoup as bs
+import json
+
 
 class Nendoroid(object):
     """docstring for Nendroid"""
@@ -13,6 +15,9 @@ class Nendoroid(object):
         self.manufacturer = ''
         self.category = ''
         self.isbn = ''
+        self.price = 0
+        self.link = ''
+        self.img_src = ''
 
         self.products = []
 
@@ -39,8 +44,12 @@ class Nendoroid(object):
         nendo.series = series
         nendo.manufacturer = manufacturer
         nendo.category = category
+        nendo.price = price
 
         return nendo
+
+    def to_str(self):
+        return '{} {} {} {}'.format(self.num, self.name, self.name_kor, self.name_eng)
 
 class Product(object):
 
