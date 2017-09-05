@@ -12,9 +12,14 @@
 <table id="list" cellspacing="0" class="ui table striped sortable unstackable" sticky-table>
     <tbody>
         <tr ng-repeat="nendoroid in fullNendoroidList | orderBy:sortFunc:sortReverse | filter:filterStr">
-            <td><img src='nendoroid.img_src' /></td>
-            <td>{{nendoroid.num}}</td>
-            <td>{{nendoroid.name}}</td>
+            <td><img src='{{nendoroid.photo_icon_src}}' /></td>
+            <td>
+                <p>{{nendoroid.num}} - {{nendoroid.name}}</p>
+                <ul>
+                    <li ng-repeat="product in nendoroid.products">
+                        <p><a href="{{product.link}}" target="_blank">{{product.market.name}} - {{product.discounted_price}}</a></p>
+                    </li>
+            </td>
         </tr>
     </tbody>
 </table>

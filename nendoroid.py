@@ -1,55 +1,76 @@
 import types
 import requests
 from bs4 import BeautifulSoup as bs
-import json
+import jsonpickle
 
+jsonpickle.set_preferred_backend('simplejson')
+jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=4)
 
 class Nendoroid(object):
     """docstring for Nendroid"""
-    def __init__(self):
+    def __init__(self, link, icon):
+        self.link = link
+        self.photo_icon_src = icon
+
         self.num = 0
         self.name = ''
-        self.name_kor = ''
-        self.name_eng = ''
+        self.name_jp = ''
+        self.name_kr = ''
+        self.name_en = ''
         self.series = ''
         self.manufacturer = ''
         self.category = ''
+        self.sculptor = ''
+        self.cooperation = ''
         self.isbn = ''
         self.price = 0
-        self.link = ''
-        self.img_src = ''
+        self.photos_src = []
 
         self.products = []
 
     def __repr__(self):
         return 'No.{} {}'.format(self.num, self.name)
 
-    def get_info(link):
-        r = requests.get(link)
+    def get_info(self):
+        r = requests.get(self.link)
         soup = bs(r.text, "html.parser")
+
+        info = soup.find('div', class_='itemInfo')
+        self.num = info.find('div', class_='itemNum').text.strip()
+        self.name = info.find('h1', class_='title').text.strip()
         
-        num = int(soup.find('div', class_='itemNum').text)
-        name = soup.find('h1', class_='title').text.strip()
+        #detail = soup.find('div', class_='itemDetail')
+
         box = soup.find('div', class_='detailBox').find('dl')
         values = box.find_all('dd')
         
-        series = values[1].text.strip()
-        manufacturer = values[2].text.strip()
-        category = values[3].text.strip()
-        price = int(values[4]['content'])
+        self.name_jp = values[0].text.strip()
+        self.series = values[1].text.strip()
+        self.manufacturer = values[2].text.strip()
+        self.category = values[3].text.strip()
+        self.price = int(values[4]['content'])
+        self.sculptor = values[7].text.strip()
+        self.cooperation = values[8].text.strip()
 
-        nendo = Nendoroid()
-        nendo.num = num
-        nendo.name = name
-        nendo.series = series
-        nendo.manufacturer = manufacturer
-        nendo.category = category
-        nendo.price = price
+        # images
+        photos = soup.find('div', class_='itemPhotos').find_all('img', class_='itemImg')
+        #print(photos)
+        self.photos_src = [p['src'] for p in photos]
 
-        return nendo
+        en_link = self.link.replace('ja/product', 'en/product')
+        r = requests.get(en_link)
+        soup = bs(r.text, "html.parser")
+
+        info = soup.find('div', class_='itemInfo')
+        self.name_en = info.find('h1', class_='title').text.strip()
 
     def to_str(self):
-        return '{} {} {} {}'.format(self.num, self.name, self.name_kor, self.name_eng)
+        return '{} {} {} {}'.format(self.num, self.name, self.name_kr, self.name_en)
+
+    def to_json(self):
+        json = jsonpickle.encode(self, unpicklable=False, make_refs=False)
+
+        return json
 
 class Product(object):
 

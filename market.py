@@ -3,7 +3,7 @@ import json
 import requests
 from bs4 import BeautifulSoup as bs
 import bottlenose
-
+from html import escape
 import config
 from nendoroid import Product
 
@@ -34,17 +34,32 @@ class AmazonJapan(Market):
         )
 
     def get_product_info(self, nendoroid):
-        r = self.amazon.ItemSearch(Keywords=nendoroid.isbn, SearchIndex="Hobbies")
+        if nendoroid.isbn:
+            keyword = nendoroid.isbn
+        else:
+            keyword = escape(nendoroid.name)
+
+        connected = False
+        while not connected:
+            try:
+                r = self.amazon.ItemSearch(Keywords=keyword, SearchIndex="Hobbies", Condition='All')
+                connected = True
+            except:
+                pass
         
-        asin = r.find('asin').string
-        link = r.find('detailpageurl').string
-        
-        r = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers')
-        amazon_offer = r.find('offer')
-        price = int(amazon_offer.find('price').find('amount').string)
-        saved = int(amazon_offer.find('amountsaved').find('amount').string)
-        
-        product = Product(nendoroid, self, link, price, discount=saved)
+        if r:
+            print(r)
+            asin = r.find('asin').string
+            link = r.find('detailpageurl').string
+            
+            r = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers')
+            amazon_offer = r.find('offer')
+            price = int(amazon_offer.find('price').find('amount').string)
+            saved = int(amazon_offer.find('amountsaved').find('amount').string)
+            
+            product = Product(nendoroid, self, link, price, discount=saved)
+        else:
+            return None
         
         return product
 
@@ -70,15 +85,22 @@ class Amiami(Market):
         super().__init__('아미아미', {}, mileages)
 
     def get_product_info(self, nendoroid):
-        self.search_params['s_keywords'] = nendoroid.isbn
+        if nendoroid.isbn:
+            self.search_params['s_keywords'] = nendoroid.isbn
+        else:
+            self.search_params['s_keywords'] = nendoroid.name_en
         r = requests.get(self.search_url, params=self.search_params)
         
         soup = bs(r.text, "html.parser")
         table = soup.find('table', class_='product_table')
-        item = table.find_all('td', class_='product_box')
+        
+        if table:
+            item = table.find_all('td', class_='product_box')
+            if item:
+                item = item[0]
+            else:
+                return None
 
-        if item:
-            item = item[0]
             link = item.find('a')['href']
 
             r = requests.get(link)
@@ -86,9 +108,14 @@ class Amiami(Market):
             selling_price = soup.find('li', class_='selling_price').text.strip().split()[0]
             selling_price = int(selling_price.replace(',', ''))
 
-            off_price_per = soup.find('span', class_='off_price').text.strip().split('%')[0]
-            off_price_per = float(off_price_per) * 0.01
-            off_price = lambda price:math.ceil(price*off_price_per/10)*10
+            off_price_per = soup.find('span', class_='off_price')
+            # 그냥 할인된 가격 그대로 가져오자 계산이 안맞음
+            if off_price_per:
+                off_price_per = off_price_per.text.strip().split('%')[0]
+                off_price_per = float(off_price_per) * 0.01
+                off_price = lambda price:math.ceil(price*off_price_per/10)*10
+            else:
+                off_price = None
 
             product = Product(nendoroid, self, link, selling_price, discount=off_price)
             return product
@@ -131,7 +158,7 @@ class Aladin(Market):
             isbn = item['isbn13']
 
             nendoroid.isbn = isbn
-            nendoroid.name_kor = item['title'].split('(')[0]
+            nendoroid.name_kr = item['title'].split('(')[0]
             product = Product(nendoroid, self, link, price, mileage=mileage)
 
             return product
