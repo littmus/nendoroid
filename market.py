@@ -33,6 +33,14 @@ class AmazonJapan(Market):
             Parser=lambda text:bs(text, "lxml")
         )
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        del state['amazon']
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
     def get_product_info(self, nendoroid):
         if nendoroid.isbn:
             keyword = nendoroid.isbn
@@ -52,16 +60,29 @@ class AmazonJapan(Market):
             asin = r.find('asin').string
             link = r.find('detailpageurl').string
             
-            r = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers')
-            amazon_offer = r.find('offer')
-            price = int(amazon_offer.find('price').find('amount').string)
-            saved = int(amazon_offer.find('amountsaved').find('amount').string)
-            
-            product = Product(nendoroid, self, link, price, discount=saved)
+            connected = False
+            while not connected:
+                try:
+                    offer = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers')
+                    connected = True
+                except:
+                    pass
+
+            if offer:
+                amazon_offer = offer.find('offer')
+                price = int(amazon_offer.find('price').find('amount').string)
+                saved = amazon_offer.find('amountsaved')
+                if saved:
+                    saved = int(saved.find('amount').string)
+                
+                product = Product(nendoroid, self, link, price, discount=saved)
+
+                return product
+            else:
+                return None
         else:
             return None
         
-        return product
 
 
 class Amiami(Market):

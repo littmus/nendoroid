@@ -1,11 +1,15 @@
 import types
 import requests
 from bs4 import BeautifulSoup as bs
+import rapidjson
 import jsonpickle
 
-jsonpickle.set_preferred_backend('simplejson')
-jsonpickle.set_encoder_options('simplejson', sort_keys=True, indent=4)
+jsonpickle.load_backend('rapidjson')
+jsonpickle.set_preferred_backend('rapidjson')
+jsonpickle.set_encoder_options('rapidjson', skipkeys=True, indent=4, ensure_ascii=False, number_mode=rapidjson.NM_NATIVE)
 
+#jsonpickle.set_preferred_backend('simplejson')
+#jsonpickle.set_encoder_options('simplejson', ensure_ascii=False, sort_keys=True, indent=4)
 class Nendoroid(object):
     """docstring for Nendroid"""
     def __init__(self, link, icon):

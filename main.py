@@ -16,7 +16,7 @@ def parse_page(url):
     items = soup.find_all("div", class_='hitItem')
     print(len(items))
 
-    for item in items[:5]:
+    for item in items[:10]:
         if 'nendoroid' not in item['class']:
             continue
         
@@ -56,18 +56,17 @@ def main():
         if amiami_pr:
             nendo.products.append(amiami_pr)
 
+        if nendo.isbn:
         # isbn 없는 경우 검색을 제대로 할수가 없음..
-        #amazon_pr = amazonjp.get_product_info(nendo)
-        #if amazon_pr:
-        #    nendo.products['AmazonJapan'] = amazon_pr
+            amazon_pr = amazonjp.get_product_info(nendo)
+            if amazon_pr:
+                nendo.products.append(amazon_pr)
 
-    with open("data/NendoroidData.js", "wt") as data:
+    with open("data/NendoroidData.js", "wt", encoding='utf8') as data:
         data.write('var nendoroidMap = {\n')
         nendo_data = ',\n'.join(['\"%s\":%s'%(nendo.num, nendo.to_json()) for nendo in nendoroids])
         data.write(nendo_data)
         data.write('\n};\n')
-
-
 
     """
 
