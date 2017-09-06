@@ -12,7 +12,7 @@
 <table id="list" cellspacing="0" class="ui table striped sortable unstackable" sticky-table>
     <tbody>
         <tr ng-repeat="nendoroid in fullNendoroidList | orderBy:sortFunc:sortReverse | filter:filterStr">
-            <td><img src='http{{nendoroid.photo_icon_src}}' /></td>
+            <td><img src='http:{{nendoroid.photo_icon_src}}' /></td>
             <td>
                 <p>{{nendoroid.num}} - {{nendoroid.name}}</p>
                 <ul>
