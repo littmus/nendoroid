@@ -1,6 +1,7 @@
 import types
 import requests
-from bs4 import BeautifulSoup as bs
+from html5_parser import parse
+import lxml
 import rapidjson
 import jsonpickle
 
@@ -12,9 +13,18 @@ jsonpickle.set_encoder_options('rapidjson', skipkeys=True, indent=4, ensure_asci
 #jsonpickle.set_encoder_options('simplejson', ensure_ascii=False, sort_keys=True, indent=4)
 class Nendoroid(object):
     """docstring for Nendroid"""
+
+    attrs = {
+        'price': '価格',
+        'sculptor': '原型制作',
+        'coop': '制作協力'
+    }
+
     def __init__(self, link, icon):
-        self.link = link
-        self.photo_icon_src = icon
+        short_link = link.split('product/')[1]
+        short_icon_src = icon.split('product/')[1]
+        self.link = short_link
+        self.photo_icon_src = short_icon_src
 
         self.num = 0
         self.name = ''
@@ -37,44 +47,59 @@ class Nendoroid(object):
 
     def get_info(self):
         r = requests.get(self.link)
-        soup = bs(r.text, "html.parser")
+        tree = parse(r.content)
+        self.num = tree.find('.//div[@class="itemNum"]//span').text.strip()
+        self.name = tree.find('.//h1[@class="title"]').text.strip()
+        print(self.num, self.name)
 
-        info = soup.find('div', class_='itemInfo')
-        self.num = info.find('div', class_='itemNum').text.strip()
-        self.name = info.find('h1', class_='title').text.strip()
-        
-        #detail = soup.find('div', class_='itemDetail')
+        detail = tree.find('.//div[@class="detailBox"]')
+        attributes = [v.text.strip() if v.text is not None else '' for v in detail.iter('dt')]
+        values = [v for v in detail.iter('dd')]
 
-        box = soup.find('div', class_='detailBox').find('dl')
-        values = box.find_all('dd')
-        
         self.name_jp = values[0].text.strip()
         self.series = values[1].text.strip()
         self.manufacturer = values[2].text.strip()
-        self.category = values[3].text.strip()
-        self.price = int(values[4]['content'])
-        self.sculptor = values[7].text.strip()
-        self.cooperation = values[8].text.strip()
+        #self.category = values[3].text.strip()
+        #self.price = int(round(float(values[4].get('content'))))
+
+        if self.attrs['price'] in attributes:
+            idx = attributes.index(self.attrs['price'])
+            try:
+                self.price = int(round(float(values[idx].get('content'))))
+            except:
+                self.price = 0
+
+        if self.attrs['sculptor'] in attributes:
+            idx = attributes.index(self.attrs['sculptor'])
+            self.sculptor = values[idx].text.strip()
+
+        if self.attrs['coop'] in attributes:
+            idx = attributes.index(self.attrs['coop'])
+            self.cooperation = values[idx].text.strip()
 
         # images
-        photos = soup.find('div', class_='itemPhotos').find_all('img', class_='itemImg')
-        #print(photos)
+        photos = tree.find('.//div[@class="itemPhotos"]//img[@class="itemImg"]')
         self.photos_src = [p['src'] for p in photos]
 
         en_link = self.link.replace('ja/product', 'en/product')
         r = requests.get(en_link)
-        soup = bs(r.text, "html.parser")
+        tree = parse(r.content)
 
-        info = soup.find('div', class_='itemInfo')
-        self.name_en = info.find('h1', class_='title').text.strip()
+        temp = tree.find('.//div[@class="itemInfo"]//h1[@class="title"]')
+        if temp is not None:
+            self.name_en = temp.text.strip()
 
     def to_str(self):
         return '{} {} {} {}'.format(self.num, self.name, self.name_kr, self.name_en)
 
-    def to_json(self):
-        json = jsonpickle.encode(self, unpicklable=False, make_refs=False)
+    def to_json(self, mode=False):
+        json = jsonpickle.encode(self, unpicklable=mode, make_refs=mode)
 
         return json
+
+    @classmethod
+    def from_json(j):
+        pass
 
 class Product(object):
 

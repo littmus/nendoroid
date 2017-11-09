@@ -2,8 +2,10 @@ import math
 import json
 import requests
 from bs4 import BeautifulSoup as bs
+from lxml import etree, objectify
 import bottlenose
 from html import escape
+
 import config
 from nendoroid import Product
 
@@ -30,7 +32,8 @@ class AmazonJapan(Market):
 
         self.amazon = bottlenose.Amazon(
             config.AMAZON_ACCESS_KEY, config.AMAZON_SECRET_KEY, config.AMAZON_JP_ASSOCIATE_TAG, Region="JP",
-            Parser=lambda text:bs(text, "lxml")
+            Parser=lambda text:etree.fromstring(text)
+            #Parser=lambda text:bs(text, "lxml")
         )
 
     def __getstate__(self):
@@ -47,34 +50,39 @@ class AmazonJapan(Market):
         else:
             keyword = escape(nendoroid.name)
 
+        print(keyword)
         connected = False
         while not connected:
             try:
-                r = self.amazon.ItemSearch(Keywords=keyword, SearchIndex="Hobbies", Condition='All')
+                tree = self.amazon.ItemSearch(Keywords=keyword, SearchIndex="Hobbies", Condition='All', MerchantId='Amazon', ResponseGroup='OfferFull')
                 connected = True
             except:
                 pass
-        
-        if r:
-            print(r)
-            asin = r.find('asin').string
-            link = r.find('detailpageurl').string
-            
+
+        if tree is not None:
+            print(etree.tostring(tree))
+            asin = tree.xpath("//*[local-name()='ASIN']")[0].text
+            link = tree.xpath("//*[local-name()='DetailPageURL']")[0].text
+
             connected = False
             while not connected:
                 try:
-                    offer = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers')
+                    offer = self.amazon.ItemLookup(ItemId=asin, ResponseGroup='Offers', MerchantId='Amazon')
                     connected = True
                 except:
                     pass
 
-            if offer:
-                amazon_offer = offer.find('offer')
-                price = int(amazon_offer.find('price').find('amount').string)
-                saved = amazon_offer.find('amountsaved')
+            if offer is not None:
+                price = int(offer.xpath("//*[local-name()='Price']//*[local-name()='Amount']")[0].text)
+                saved = offer.xpath("//*[local-name()='AmountSaved']")
+
                 if saved:
-                    saved = int(saved.find('amount').string)
-                
+
+                    print(etree.tostring(saved[0]))
+                    saved = int(saved[0].xpath("./*[local-name()='Amount']")[0].text)
+                else:
+                    saved = None
+                print(price, saved)
                 product = Product(nendoroid, self, link, price, discount=saved)
 
                 return product
@@ -82,7 +90,7 @@ class AmazonJapan(Market):
                 return None
         else:
             return None
-        
+
 
 
 class Amiami(Market):
@@ -111,10 +119,10 @@ class Amiami(Market):
         else:
             self.search_params['s_keywords'] = nendoroid.name_en
         r = requests.get(self.search_url, params=self.search_params)
-        
+
         soup = bs(r.text, "html.parser")
         table = soup.find('table', class_='product_table')
-        
+
         if table:
             item = table.find_all('td', class_='product_box')
             if item:
@@ -145,7 +153,7 @@ class Amiami(Market):
             return None
 
 class Aladin(Market):
-    
+
     search_url = 'http://www.aladin.co.kr/ttb/api/ItemSearch.aspx'
     search_params = {
         'TTBKey':config.ALADIN_KEY,
@@ -154,11 +162,11 @@ class Aladin(Market):
         'Output':'JS',
     }
 
-    def __init__(self):     
+    def __init__(self):
         discounts = {}
         #discounts['기본 할인'] = lambda price:math.ceil((price*0.1/10))*10
         discounts['5만원 이상 할인'] = lambda price:2000 if price >= 50000 else 0
-        
+
         mileages = {}
         mileages['5만원 이상 마일리지 '] = lambda price:2000 if price >= 50000 else 0
         #mileages['상품 마일리지'] = lambda price:price*0.03

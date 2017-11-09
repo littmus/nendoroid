@@ -10,7 +10,6 @@ var StickyTableDirective = function () { return ({
 }); };
 var myModule = angular.module('myModule', ['ngRoute']);
 myModule.directive('stickyTable', StickyTableDirective);
-//myModule.controller('PersonaController', ['$scope', PersonaController]);
 myModule.controller('NendoroidListController', ['$scope', NendoroidListController]);
 
 myModule.config(function ($routeProvider) {
